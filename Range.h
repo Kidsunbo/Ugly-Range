@@ -120,6 +120,95 @@ namespace view{
         }
     }
 
+    namespace experimental2{
+        using namespace std;
+
+        template<typename... T>
+        using void_t = void;
+
+        template<typename T,typename =void>
+        struct is_iterable:false_type{};
+
+        template<typename T>
+        struct is_iterable<T
+                ,void_t<decltype(declval<T>().begin()),
+                        decltype(declval<T>().end()),
+                        typename T::iterator,
+                        typename T::value_type>
+        >:true_type{};
+
+        template<typename T,typename =enable_if_t <is_iterable<T>::value>>
+        class stream{
+            T container;
+            vector<function<void()>> actions;
+        public:
+            stream(T t):container(t){
+
+            }
+            stream<T>& filter(function<bool(typename T::value_type)> f){
+                auto temp = [&,this](){
+                    T tmp;
+
+                    for(auto& i:container){
+                        if(f(i)) tmp.push_back(i);
+                    }
+                    this->container= tmp;
+                };
+                actions.push_back(temp);
+                return *this;
+            }
+
+            // If the return value of the function differs, it has to run all the actions and return a new stream.
+            // But for simplify, just return the same type values.
+            stream<T>& map(function<typename T::value_type(typename T::value_type)> f){
+                auto temp = [&](){
+                    T tmp;
+                    for(auto& i:container){
+                        tmp.push_back(f(i));
+                    }
+                    this->container= tmp;
+                };
+
+                actions.push_back(temp);
+                return *this;
+            }
+
+            typename T::value_type max(){
+                cout<<"actions "<<actions.size()<<endl;
+                for(auto& a:actions) a();
+                typename T::value_type m = *container.begin();
+                for(auto& i:container){
+                    m=m>i?m:i;
+                }
+                return m;
+            }
+            typename T::value_type min(){
+                for(auto a:actions) a();
+                typename T::value_type m = *container.begin();
+                for(auto& i:container){
+                    m=m<i?m:i;
+                }
+                return m;
+            }
+
+            typename T::iterator begin(){
+                return container.begin();
+            }
+            auto end(){
+                return container.end();
+            }
+
+            auto getC(){
+                return container;
+            }
+        };
+
+        template <typename T>
+        stream<T> getStream(T t){
+            return stream<T>(t);
+        }
+    }
+
     inline namespace current {
         using namespace std;
 
