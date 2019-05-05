@@ -39,7 +39,7 @@ namespace view{
             Range(Con t):vec(t){}
 
             auto getVec()const{return vec;}
-            virtual Range<Con> operator()(Con v) const{};
+			virtual Range<Con> operator()(Con v) const { return *this; };
 
             auto begin() const{
                 return vec.begin();
@@ -139,17 +139,36 @@ namespace view{
 
         template<typename T,typename =enable_if_t <is_iterable<T>::value>>
         class stream{
-            T container;
+			T container;
             vector<function<void()>> actions;
         public:
             stream(T t):container(t){
-
             }
-            stream<T>& filter(function<bool(typename T::value_type)> f){
-                auto temp = [&,this](){
-                    T tmp;
+			stream(const stream& s) {
+				container = s.container;
+				actions = s.actions;
 
-                    for(auto& i:container){
+			}
+			stream(stream&& s) {
+				container = s.container;
+				actions = s.actions;
+			}
+
+			stream<T>& operator=(const stream& s) {
+				container = s.container;
+				actions = s.actions;
+				return *this;
+			}
+			stream<T>& operator=(stream&& s) {
+				container = s.container;
+				actions = s.actions;
+				return *this;
+			}
+
+            stream<T>& filter(function<bool(typename T::value_type)> f){
+                auto temp = [&,f](){
+                    T tmp;
+                    for(auto& i:this->container){
                         if(f(i)) tmp.push_back(i);
                     }
                     this->container= tmp;
@@ -161,7 +180,7 @@ namespace view{
             // If the return value of the function differs, it has to run all the actions and return a new stream.
             // But for simplify, just return the same type values.
             stream<T>& map(function<typename T::value_type(typename T::value_type)> f){
-                auto temp = [&](){
+                auto temp = [&,f](){
                     T tmp;
                     for(auto& i:container){
                         tmp.push_back(f(i));
@@ -174,7 +193,6 @@ namespace view{
             }
 
             typename T::value_type max(){
-                cout<<"actions "<<actions.size()<<endl;
                 for(auto& a:actions) a();
                 typename T::value_type m = *container.begin();
                 for(auto& i:container){
@@ -192,6 +210,7 @@ namespace view{
             }
 
             typename T::iterator begin(){
+				for (auto& a : actions) a();
                 return container.begin();
             }
             auto end(){

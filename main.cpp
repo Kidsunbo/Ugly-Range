@@ -2,19 +2,7 @@
 using namespace view::experimental;
 using namespace view::experimental2;
 using namespace std;
-class A{
-    function<void()> f;
-    vector<int> v;
-public:
-    A(vector<int> v){
-        this->v=v;
-    }
-    void fun(function<void()> f){
-        for(auto i:v){
-            f();
-        }
-    }
-};
+
 
 int main() {
     list<int> hello{1,2,3,4,5};
@@ -33,18 +21,17 @@ int main() {
     std::cout<<mx<<std::endl;
     std::cout<<mn<<std::endl;
 
-    std::cout<<"------"<<std::endl;
-
-//    for(auto i: getStream(hello).filter([](auto x){return x%2!=0;}).map([](auto x){return 3*x;})){
-//        std::cout<<i<<std::endl;
-//    }
-    auto a =getStream(hello1).filter([](auto x){return x%2!=0;});//.map([](auto x){return 3*x;});
-    a.max();
+	std::cout << "------" << std::endl;
     std::cout<<"------"<<std::endl;
     std::cout<<"------"<<std::endl;
 
-    A aa{vector<int>{1,2,3}};
-    aa.fun([](){cout<<"*"<<endl;});
+	auto a = getStream(hello1);
+	a = a.filter([](auto x) {return x % 2 == 0;}).map([](auto x) {return 3 * x;});
+	
+	for (auto i : a) {
+		cout << i << endl;
+	}
 
+	cin.get();
     return 0;
 }
