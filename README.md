@@ -65,3 +65,54 @@ for(auto i:hello1
     }
 ```
 OK, I am gonna sleep now. It's half to mid night in UK.
+
+# OOP
+I still provide the OOP interface in the namespace experimental2. It totally imitates the Stream system in `Java8`. It works fine and the example code is listed below:
+> Get the Stream object:
+```c++
+auto a = getStream(hello);
+// auto a = std::move(getStream(hello)); This will use move constructor
+```
+This line of code will create a temporary stream object and then assign it to a with copy constructor. If using move function, it will force to use move constructor.
+
+> Add function
+```c++
+ auto temp = [&,f](){  };
+```
+It worth noticing that **I use value capture to get the function object. Because even though I need to use referece to assign new value to the container, but the function object is a local variable, which will be freed when the method ends. But for lambda funtion, it will be executed later in the program, so use value capture to get a copy of the function object will work fine.**
+
+> GetStream function
+```c++
+template <typename T>
+stream<T> getStream(T t){
+    return stream<T>(t);
+}
+```
+
+This is a helper function to create a stream without inputing the type arguments. 
+**CAUTION**: DO NOT USE `stream<T>&&` AS RETURN TYPE. 
+Because when using referece as return type, the local variable will always be freed, and then use move constructor to create a new object. In the move cosntrutor, the code assigns the two container (one is data, one is action) of the original temporary object which have been destroyed to the new one. So the actions and the data only contains undefined contents, which will cause crash of the program.
+But when using `stream<T>` as the return type, the compiler will use RVO or NRVO (if the name is provided), where the original data won't be destroyed. So the whole program can run properly.
+
+> Register the actions
+```c++
+a = a.filter([](auto x) {return x % 2 == 0;}).map([](auto x) {return 3 * x;});
+```
+It will register two actions into the stream, the actions will not be executed now.
+
+> Run the actions
+```c++
+	for (auto i : a) {
+		cout << i << endl;
+	}
+```
+The actions will be executed in the `begin()` method, so that actions will be applied into the stream.
+
+> DO NOT CREATE A STREAM LIKE THIS
+```c++
+	auto a = getStream(hello1).filter([](auto x) {return x % 2 == 0;}).map([](auto x) {return 3 * x;});
+```
+ Mostly, it will have no effect on the result. The result will still be the same as original one. No action will perform properly. That's because **in this statement, the actions has been registered into the temporary stream object. Then  the object will be assigned to another object named `a`. When the final operation or loop begins, the actions will be executed but they only influence the original container, which belongs to the temporary object, and there will be no effect on `a`. So the result could always be wired.** 
+ 
+ # Conclusion
+ Alright, I have finish most of the toy code, it implements OOP, performing on vector and performing on all kinds of containers. I don't think I will improve it later. I have other things to do :)
